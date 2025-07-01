@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Playwright browser storage
+playwright/.cache/
+playwright/.local-browsers/
+
+# Logs and results
+logs/
+*.log
+results/
+*.json
+*.csv
+*.png
+
+# Reports and templates
+*.html
+
+# Virtual environments
+venv/
+.env/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Pytest and cache
+.cache/
+.pytest_cache/
