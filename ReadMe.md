@@ -36,37 +36,5 @@ python3 blackxss.py https://example.com --payload-file payload.txt --output resu
 - Playwright (`pip install playwright && playwright install`)
 - `beautifulsoup4`, `jinja2`, `requests`
 
-## File Structure
-```
-blackxss/
-├── blackxss.py
-├── cli/
-│   └── cli.py
-├── config/
-│   └── settings.py
-├── core/
-│   ├── crawler.py
-│   ├── form_parser.py
-│   ├── injector.py
-│   └── scanner.py
-├── engine/
-│   ├── js_engine.py
-│   └── payload_engine.py
-├── modules/
-│   ├── auth_manager.py
-│   └── scope_filter.py
-├── reporting/
-│   ├── reporter.py
-│   └── templates/
-│       └── report.html.j2
-├── utils/
-│   ├── helpers.py
-│   ├── http_client.py
-│   └── logger.py
-├── payload.txt        # You must provide this file
-├── requirements.txt   # Dependencies
-└── README.md          # This file
-```
-
 
 

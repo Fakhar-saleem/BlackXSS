@@ -1,0 +1,188 @@
+import os
+import json
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+from config.settings import REPORT_TEMPLATE_DIR, EXPORT_JSON, EXPORT_CSV
+from utils.logger import log
+
+class Reporter:
+    def __init__(self, template=None):
+        template_name = template or 'report.html.j2'
+        
+        # Ensure template directory exists
+        os.makedirs(REPORT_TEMPLATE_DIR, exist_ok=True)
+        
+        self.env = Environment(loader=FileSystemLoader(REPORT_TEMPLATE_DIR))
+        
+        try:
+            self.template = self.env.get_template(template_name)
+            log(f"[REPORT] Template loaded: {template_name}")
+        except TemplateNotFound:
+            log(f"[REPORT ERROR] Template not found: {template_name}")
+            # Use fallback template
+            self.template = self.env.from_string(self._get_fallback_template())
+            log("[REPORT] Using fallback template")
+
+    def _get_fallback_template(self):
+        """Simple fallback HTML template if the main template is missing"""
+        return """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BlackXSS Security Report</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        h1 { 
+            color: #d32f2f; 
+            border-bottom: 3px solid #d32f2f; 
+            padding-bottom: 10px; 
+        }
+        .summary { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 20px 0; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            padding: 12px; 
+            border: 1px solid #ddd; 
+            text-align: left; 
+        }
+        th { 
+            background: #f8f9fa; 
+            font-weight: 600; 
+        }
+        .critical { background-color: #ffebee; }
+        .reflected { background-color: #e3f2fd; }
+        .stored { background-color: #e8f5e8; }
+        .dom { background-color: #fff3e0; }
+        .payload { 
+            font-family: 'Consolas', monospace; 
+            background: #f5f5f5; 
+            padding: 4px 8px; 
+            border-radius: 3px; 
+            word-break: break-all; 
+        }
+        .no-findings { 
+            text-align: center; 
+            color: #4caf50; 
+            font-size: 18px; 
+            margin: 30px 0; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 BlackXSS Security Report</h1>
+        
+        <div class="summary">
+            <h3>Scan Summary</h3>
+            <p><strong>Generated:</strong> {{ "now"|strftime("%Y-%m-%d %H:%M:%S") }}</p>
+            <p><strong>Total Findings:</strong> {{ results | length }}</p>
+            {% if results %}
+            <p><strong>Vulnerability Types:</strong>
+            {% set types = {} %}
+            {% for result in results %}
+                {% if types.update({result.type: types.get(result.type, 0) + 1}) %}{% endif %}
+            {% endfor %}
+            {% for type, count in types.items() %}
+                {{ type }}: {{ count }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            </p>
+            {% endif %}
+        </div>
+
+        {% if results %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Vulnerability Type</th>
+                    <th>URL</th>
+                    <th>Payload</th>
+                    <th>Evidence</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in results %}
+                <tr class="{{ result.type.lower() }}">
+                    <td><strong>{{ result.type }}</strong></td>
+                    <td><a href="{{ result.url }}" target="_blank">{{ result.url[:80] }}{% if result.url|length > 80 %}...{% endif %}</a></td>
+                    <td><code class="payload">{{ result.payload }}</code></td>
+                    <td>
+                        {% if result.screenshot %}
+                            <a href="{{ result.screenshot }}" target="_blank">📸 Screenshot</a>
+                        {% else %}
+                            Payload reflected in response
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="no-findings">
+            ✅ No XSS vulnerabilities found during this scan.
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+            <p>Generated by BlackXSS v1.0 - Security Scanner by Fakhar Saleem</p>
+        </div>
+    </div>
+</body>
+</html>"""
+
+    def generate(self, results, output_path):
+        """
+        Render the HTML report and optionally export JSON/CSV.
+        """
+        try:
+            # Ensure output directory exists
+            output_dir = os.path.dirname(output_path)
+            if output_dir:
+                os.makedirs(output_dir, exist_ok=True)
+
+            # Render HTML
+            html_content = self.template.render(results=results)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            log(f"[REPORT] HTML report saved to {output_path}")
+
+            # Export JSON
+            if EXPORT_JSON:
+                json_path = output_path.replace('.html', '.json')
+                with open(json_path, 'w', encoding='utf-8') as jf:
+                    json.dump(results, jf, indent=2)
+                log(f"[REPORT] JSON report saved to {json_path}")
+
+            # Export CSV if enabled and results exist
+            if EXPORT_CSV and results:
+                import csv
+                csv_path = output_path.replace('.html', '.csv')
+                keys = results[0].keys() if results else ['type', 'url', 'payload']
+                with open(csv_path, 'w', newline='', encoding='utf-8') as cf:
+                    writer = csv.DictWriter(cf, fieldnames=keys)
+                    writer.writeheader()
+                    writer.writerows(results)
+                log(f"[REPORT] CSV report saved to {csv_path}")
+                
+        except Exception as e:
+            log(f"[REPORT ERROR] Failed to generate report: {e}")
+            raise

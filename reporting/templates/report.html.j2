@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlackXSS Security Report</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .summary {
+      padding: 30px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .summary h2 {
+      color: #495057;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      border-left: 4px solid #007bff;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    .stat-label {
+      color: #6c757d;
+      margin-top: 5px;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .vulnerability-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .vulnerability-table th {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .vulnerability-table td {
+      padding: 15px;
+      border-bottom: 1px solid #e9ecef;
+      vertical-align: top;
+    }
+
+    .vulnerability-table tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .vuln-type {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .vuln-type.reflected {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .vuln-type.stored {
+      background: #e8f5e8;
+      color: #388e3c;
+    }
+
+    .vuln-type.dom {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+
+    .vuln-type.form {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+
+    .url-cell {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .url-cell a {
+      color: #007bff;
+      text-decoration: none;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+    }
+
+    .url-cell a:hover {
+      text-decoration: underline;
+    }
+
+    .payload {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      max-width: 250px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #dc3545;
+    }
+
+    .screenshot-link {
+      display: inline-block;
+      background: #17a2b8;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 0.8rem;
+    }
+
+    .screenshot-link:hover {
+      background: #138496;
+    }
+
+    .no-findings {
+      text-align: center;
+      padding: 60px 20px;
+      color: #28a745;
+    }
+
+    .no-findings .icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+
+    .no-findings h3 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+
+    .footer {
+      background: #343a40;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9rem;
+    }
+
+    .footer a {
+      color: #17a2b8;
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      .vulnerability-table {
+        font-size: 0.8rem;
+      }
+      
+      .vulnerability-table th,
+      .vulnerability-table td {
+        padding: 10px 8px;
+      }
+      
+      .header h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🛡️ BlackXSS Security Report</h1>
+      <div class="subtitle">Comprehensive XSS Vulnerability Assessment</div>
+    </div>
+
+    <div class="summary">
+      <h2>📊 Scan Summary</h2>
+      <p><strong>Generated:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+      <p><strong>Scanner:</strong> BlackXSS v1.0 by Fakhar Saleem</p>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number">{{ results | length }}</div>
+          <div class="stat-label">Total Findings</div>
+        </div>
+        
+        {% set vuln_types = {} %}
+        {% for result in results %}
+          {% set _ = vuln_types.update({result.type: vuln_types.get(result.type, 0) + 1}) %}
+        {% endfor %}
+        
+        {% for type, count in vuln_types.items() %}
+        <div class="stat-card">
+          <div class="stat-number">{{ count }}</div>
+          <div class="stat-label">{{ type }} XSS</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="content">
+      {% if results %}
+        <h2>🚨 Identified Vulnerabilities</h2>
+        <table class="vulnerability-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Target URL</th>
+              <th>Payload</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for result in results %}
+            <tr>
+              <td>
+                <span class="vuln-type {{ result.type.lower() }}">
+                  {{ result.type }}
+                </span>
+              </td>
+              <td class="url-cell">
+                <a href="{{ result.url }}" target="_blank" title="{{ result.url }}">
+                  {{ result.url }}
+                </a>
+              </td>
+              <td>
+                <div class
