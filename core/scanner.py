@@ -1,3 +1,5 @@
+# core/scanner.py
+
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -6,7 +8,7 @@ from core.form_parser import parse_forms
 from core.injector import inject_payloads, inject_forms
 from engine.js_engine import run_dom_detection
 from reporting.reporter import Reporter
-from modules.auth_manager import AuthManager
+# from modules.auth_manager import AuthManager  # COMMENTED OUT
 from utils.logger import log
 
 def run_full_scan(args):
@@ -18,14 +20,15 @@ def run_full_scan(args):
     findings = []
     
     try:
-        # Authentication setup
-        auth_mgr = None
+        # Authentication setup - DISABLED
+        # auth_mgr = None
         if args.auth:
-            try:
-                auth_mgr = AuthManager(args.auth)
-                log("[AUTH] Authentication manager initialized")
-            except Exception as e:
-                log(f"[AUTH ERROR] Failed to initialize auth: {e}")
+            log("[AUTH WARNING] Authentication feature disabled - ignoring --auth parameter")
+            # try:
+            #     auth_mgr = AuthManager(args.auth)
+            #     log("[AUTH] Authentication manager initialized")
+            # except Exception as e:
+            #     log(f"[AUTH ERROR] Failed to initialize auth: {e}")
 
         # Crawling phase
         urls = [args.url]
