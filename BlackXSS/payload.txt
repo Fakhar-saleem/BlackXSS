@@ -1,1 +1,0 @@
-# Place your custom XSS payloads here, one per line

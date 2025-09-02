@@ -1,7 +1,0 @@
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>BlackXSS Report</title></head><body>
-<h1>Scan Results</h1><ul>
-{% for r in results %}
-<li><strong>{{ r.type }}</strong> - <a href="{{ r.url }}">{{ r.url }}</a> {% if r.payload %} ({{ r.payload }}){% endif %}</li>
-{% endfor %}
-</ul></body></html>
